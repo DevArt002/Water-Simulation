@@ -11,6 +11,17 @@ const height = canvas.clientHeight * window.devicePixelRatio;
 // Colors
 const black = new THREE.Color("black");
 const white = new THREE.Color("white");
+
+function loadFile(filename) {
+    return new Promise((resolve, reject) => {
+        const loader = new THREE.FileLoader();
+
+        loader.load(filename, (data) => {
+            resolve(data);
+        });
+    });
+}
+
 // Constants
 const waterPosition = new THREE.Vector3(0, 0, 0.8);
 const near = 0;
