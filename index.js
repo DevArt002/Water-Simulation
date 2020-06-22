@@ -245,3 +245,17 @@ const plantLoaded = new Promise((resolve) => {
         resolve();
     });
 });
+
+// Skybox
+const cubetextureloader = new THREE.CubeTextureLoader();
+
+const skybox = cubetextureloader.load([
+    "assets/TropicalSunnyDay_px.jpg",
+    "assets/TropicalSunnyDay_nx.jpg",
+    "assets/TropicalSunnyDay_py.jpg",
+    "assets/TropicalSunnyDay_ny.jpg",
+    "assets/TropicalSunnyDay_pz.jpg",
+    "assets/TropicalSunnyDay_nz.jpg",
+]);
+
+scene.background = skybox;
