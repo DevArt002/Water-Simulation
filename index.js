@@ -259,3 +259,102 @@ const skybox = cubetextureloader.load([
 ]);
 
 scene.background = skybox;
+// This renders the environment map seen from the light POV.
+// The resulting texture contains (posx, posy, posz, depth) in the colors channels.
+class EnvironmentMap {
+    constructor() {
+        this.size = 1024;
+        this.target = new THREE.WebGLRenderTarget(this.size, this.size, {
+            type: THREE.FloatType,
+        });
+
+        const shadersPromises = [
+            loadFile("shaders/environment_mapping/vertex.glsl"),
+            loadFile("shaders/environment_mapping/fragment.glsl"),
+        ];
+
+        this._meshes = [];
+
+        this.loaded = Promise.all(shadersPromises).then(
+            ([vertexShader, fragmentShader]) => {
+                this._material = new THREE.ShaderMaterial({
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                });
+            }
+        );
+    }
+
+    setGeometries(geometries) {
+        this._meshes = [];
+
+        for (let geometry of geometries) {
+            this._meshes.push(new THREE.Mesh(geometry, this._material));
+        }
+    }
+
+    render(renderer) {
+        const oldTarget = renderer.getRenderTarget();
+
+        renderer.setRenderTarget(this.target);
+        renderer.setClearColor(black, 0);
+        renderer.clear();
+
+        for (let mesh of this._meshes) {
+            renderer.render(mesh, lightCamera);
+        }
+
+        renderer.setRenderTarget(oldTarget);
+    }
+}
+
+class Environment {
+    constructor() {
+        const shadersPromises = [
+            loadFile("shaders/environment/vertex.glsl"),
+            loadFile("shaders/environment/fragment.glsl"),
+        ];
+
+        this._meshes = [];
+
+        this.loaded = Promise.all(shadersPromises).then(
+            ([vertexShader, fragmentShader]) => {
+                this._material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        light: { value: light },
+                        caustics: { value: null },
+                        lightProjectionMatrix: {
+                            value: lightCamera.projectionMatrix,
+                        },
+                        lightViewMatrix: {
+                            value: lightCamera.matrixWorldInverse,
+                        },
+                    },
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                });
+            }
+        );
+    }
+
+    setGeometries(geometries) {
+        this._meshes = [];
+
+        for (let geometry of geometries) {
+            this._meshes.push(new THREE.Mesh(geometry, this._material));
+        }
+    }
+
+    updateCaustics(causticsTexture) {
+        this._material.uniforms["caustics"].value = causticsTexture;
+    }
+
+    addTo(scene) {
+        for (let mesh of this._meshes) {
+            scene.add(mesh);
+        }
+    }
+}
+
+const environmentMap = new EnvironmentMap();
+const environment = new Environment();
