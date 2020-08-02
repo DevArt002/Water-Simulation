@@ -345,50 +345,6 @@ class WaterSimulation {
     }
 }
 
-class Water {
-    constructor() {
-        this.geometry = waterGeometry;
-
-        const shadersPromises = [
-            loadFile("shaders/water/vertex.glsl"),
-            loadFile("shaders/water/fragment.glsl"),
-        ];
-
-        this.loaded = Promise.all(shadersPromises).then(
-            ([vertexShader, fragmentShader]) => {
-                this.material = new THREE.ShaderMaterial({
-                    uniforms: {
-                        light: { value: light },
-                        water: { value: null },
-                        envMap: { value: null },
-                        skybox: { value: skybox },
-                    },
-                    vertexShader: vertexShader,
-                    fragmentShader: fragmentShader,
-                });
-                this.material.extensions = {
-                    derivatives: true,
-                };
-
-                this.mesh = new THREE.Mesh(this.geometry, this.material);
-                this.mesh.position.set(
-                    waterPosition.x,
-                    waterPosition.y,
-                    waterPosition.z
-                );
-            }
-        );
-    }
-
-    setHeightTexture(waterTexture) {
-        this.material.uniforms["water"].value = waterTexture;
-    }
-
-    setEnvMapTexture(envMap) {
-        this.material.uniforms["envMap"].value = envMap;
-    }
-}
-
 // This renders the environment map seen from the light POV.
 // The resulting texture contains (posx, posy, posz, depth) in the colors channels.
 class EnvironmentMap {
@@ -437,89 +393,6 @@ class EnvironmentMap {
         renderer.setRenderTarget(oldTarget);
     }
 }
-
-class Caustics {
-    constructor() {
-        this.target = new THREE.WebGLRenderTarget(
-            waterSize * 3,
-            waterSize * 3,
-            { type: THREE.FloatType }
-        );
-
-        this._waterGeometry = new THREE.PlaneBufferGeometry(
-            2,
-            2,
-            waterSize,
-            waterSize
-        );
-
-        const shadersPromises = [
-            loadFile("shaders/caustics/water_vertex.glsl"),
-            loadFile("shaders/caustics/water_fragment.glsl"),
-        ];
-
-        this.loaded = Promise.all(shadersPromises).then(
-            ([waterVertexShader, waterFragmentShader]) => {
-                this._waterMaterial = new THREE.ShaderMaterial({
-                    uniforms: {
-                        light: { value: light },
-                        env: { value: null },
-                        water: { value: null },
-                        deltaEnvTexture: { value: null },
-                    },
-                    vertexShader: waterVertexShader,
-                    fragmentShader: waterFragmentShader,
-                    transparent: true,
-                });
-
-                this._waterMaterial.blending = THREE.CustomBlending;
-
-                // Set the blending so that:
-                // Caustics intensity uses an additive function
-                this._waterMaterial.blendEquation = THREE.AddEquation;
-                this._waterMaterial.blendSrc = THREE.OneFactor;
-                this._waterMaterial.blendDst = THREE.OneFactor;
-
-                // Caustics depth does not use blending, we just set the value
-                this._waterMaterial.blendEquationAlpha = THREE.AddEquation;
-                this._waterMaterial.blendSrcAlpha = THREE.OneFactor;
-                this._waterMaterial.blendDstAlpha = THREE.ZeroFactor;
-
-                this._waterMaterial.side = THREE.DoubleSide;
-                this._waterMaterial.extensions = {
-                    derivatives: true,
-                };
-
-                this._waterMesh = new THREE.Mesh(
-                    this._waterGeometry,
-                    this._waterMaterial
-                );
-            }
-        );
-    }
-
-    setDeltaEnvTexture(deltaEnvTexture) {
-        this._waterMaterial.uniforms["deltaEnvTexture"].value = deltaEnvTexture;
-    }
-
-    setTextures(waterTexture, envTexture) {
-        this._waterMaterial.uniforms["env"].value = envTexture;
-        this._waterMaterial.uniforms["water"].value = waterTexture;
-    }
-
-    render(renderer) {
-        const oldTarget = renderer.getRenderTarget();
-
-        renderer.setRenderTarget(this.target);
-        renderer.setClearColor(black, 0);
-        renderer.clear();
-
-        renderer.render(this._waterMesh, lightCamera);
-
-        renderer.setRenderTarget(oldTarget);
-    }
-}
-
 class Environment {
     constructor() {
         const shadersPromises = [
@@ -565,44 +438,6 @@ class Environment {
         for (let mesh of this._meshes) {
             scene.add(mesh);
         }
-    }
-}
-
-class Debug {
-    constructor() {
-        this._camera = new THREE.OrthographicCamera(0, 1, 1, 0, 0, 1);
-        this._geometry = new THREE.PlaneBufferGeometry();
-
-        const shadersPromises = [
-            loadFile("shaders/debug/vertex.glsl"),
-            loadFile("shaders/debug/fragment.glsl"),
-        ];
-
-        this.loaded = Promise.all(shadersPromises).then(
-            ([vertexShader, fragmentShader]) => {
-                this._material = new THREE.RawShaderMaterial({
-                    uniforms: {
-                        texture: { value: null },
-                    },
-                    vertexShader: vertexShader,
-                    fragmentShader: fragmentShader,
-                });
-
-                this._mesh = new THREE.Mesh(this._geometry, this._material);
-                this._material.transparent = true;
-            }
-        );
-    }
-
-    draw(renderer, texture) {
-        this._material.uniforms["texture"].value = texture;
-
-        const oldTarget = renderer.getRenderTarget();
-
-        renderer.setRenderTarget(null);
-        renderer.render(this._mesh, this._camera);
-
-        renderer.setRenderTarget(oldTarget);
     }
 }
 
