@@ -345,6 +345,50 @@ class WaterSimulation {
     }
 }
 
+class Water {
+    constructor() {
+        this.geometry = waterGeometry;
+
+        const shadersPromises = [
+            loadFile("shaders/water/vertex.glsl"),
+            loadFile("shaders/water/fragment.glsl"),
+        ];
+
+        this.loaded = Promise.all(shadersPromises).then(
+            ([vertexShader, fragmentShader]) => {
+                this.material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        light: { value: light },
+                        water: { value: null },
+                        envMap: { value: null },
+                        skybox: { value: skybox },
+                    },
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                });
+                this.material.extensions = {
+                    derivatives: true,
+                };
+
+                this.mesh = new THREE.Mesh(this.geometry, this.material);
+                this.mesh.position.set(
+                    waterPosition.x,
+                    waterPosition.y,
+                    waterPosition.z
+                );
+            }
+        );
+    }
+
+    setHeightTexture(waterTexture) {
+        this.material.uniforms["water"].value = waterTexture;
+    }
+
+    setEnvMapTexture(envMap) {
+        this.material.uniforms["envMap"].value = envMap;
+    }
+}
+
 // This renders the environment map seen from the light POV.
 // The resulting texture contains (posx, posy, posz, depth) in the colors channels.
 class EnvironmentMap {
