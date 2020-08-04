@@ -438,6 +438,88 @@ class EnvironmentMap {
     }
 }
 
+class Caustics {
+    constructor() {
+        this.target = new THREE.WebGLRenderTarget(
+            waterSize * 3,
+            waterSize * 3,
+            { type: THREE.FloatType }
+        );
+
+        this._waterGeometry = new THREE.PlaneBufferGeometry(
+            2,
+            2,
+            waterSize,
+            waterSize
+        );
+
+        const shadersPromises = [
+            loadFile("shaders/caustics/water_vertex.glsl"),
+            loadFile("shaders/caustics/water_fragment.glsl"),
+        ];
+
+        this.loaded = Promise.all(shadersPromises).then(
+            ([waterVertexShader, waterFragmentShader]) => {
+                this._waterMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        light: { value: light },
+                        env: { value: null },
+                        water: { value: null },
+                        deltaEnvTexture: { value: null },
+                    },
+                    vertexShader: waterVertexShader,
+                    fragmentShader: waterFragmentShader,
+                    transparent: true,
+                });
+
+                this._waterMaterial.blending = THREE.CustomBlending;
+
+                // Set the blending so that:
+                // Caustics intensity uses an additive function
+                this._waterMaterial.blendEquation = THREE.AddEquation;
+                this._waterMaterial.blendSrc = THREE.OneFactor;
+                this._waterMaterial.blendDst = THREE.OneFactor;
+
+                // Caustics depth does not use blending, we just set the value
+                this._waterMaterial.blendEquationAlpha = THREE.AddEquation;
+                this._waterMaterial.blendSrcAlpha = THREE.OneFactor;
+                this._waterMaterial.blendDstAlpha = THREE.ZeroFactor;
+
+                this._waterMaterial.side = THREE.DoubleSide;
+                this._waterMaterial.extensions = {
+                    derivatives: true,
+                };
+
+                this._waterMesh = new THREE.Mesh(
+                    this._waterGeometry,
+                    this._waterMaterial
+                );
+            }
+        );
+    }
+
+    setDeltaEnvTexture(deltaEnvTexture) {
+        this._waterMaterial.uniforms["deltaEnvTexture"].value = deltaEnvTexture;
+    }
+
+    setTextures(waterTexture, envTexture) {
+        this._waterMaterial.uniforms["env"].value = envTexture;
+        this._waterMaterial.uniforms["water"].value = waterTexture;
+    }
+
+    render(renderer) {
+        const oldTarget = renderer.getRenderTarget();
+
+        renderer.setRenderTarget(this.target);
+        renderer.setClearColor(black, 0);
+        renderer.clear();
+
+        renderer.render(this._waterMesh, lightCamera);
+
+        renderer.setRenderTarget(oldTarget);
+    }
+}
+
 class Environment {
     constructor() {
         const shadersPromises = [
