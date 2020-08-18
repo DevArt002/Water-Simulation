@@ -667,3 +667,24 @@ function animate() {
 
     window.requestAnimationFrame(animate);
 }
+
+function onMouseMove(event) {
+    const rect = canvas.getBoundingClientRect();
+
+    mouse.x = ((event.clientX - rect.left) * 2) / width - 1;
+    mouse.y = (-(event.clientY - rect.top) * 2) / height + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObject(targetmesh);
+
+    for (let intersect of intersects) {
+        waterSimulation.addDrop(
+            renderer,
+            intersect.point.x,
+            intersect.point.y,
+            0.03,
+            0.02
+        );
+    }
+}
