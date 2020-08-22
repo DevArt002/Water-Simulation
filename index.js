@@ -688,3 +688,15 @@ function onMouseMove(event) {
         );
     }
 }
+
+const loaded = [
+    waterSimulation.loaded,
+    water.loaded,
+    environmentMap.loaded,
+    environment.loaded,
+    caustics.loaded,
+    debug.loaded,
+    sharkLoaded,
+    rockLoaded,
+    plantLoaded,
+];
