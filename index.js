@@ -700,3 +700,29 @@ const loaded = [
     rockLoaded,
     plantLoaded,
 ];
+
+Promise.all(loaded).then(() => {
+    const envGeometries = [floorGeometry, shark, rock1, rock2, plant];
+
+    environmentMap.setGeometries(envGeometries);
+    environment.setGeometries(envGeometries);
+
+    environment.addTo(scene);
+    scene.add(water.mesh);
+
+    caustics.setDeltaEnvTexture(1 / environmentMap.size);
+
+    canvas.addEventListener("mousemove", { handleEvent: onMouseMove });
+
+    for (var i = 0; i < 5; i++) {
+        waterSimulation.addDrop(
+            renderer,
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1,
+            0.03,
+            i & 1 ? 0.02 : -0.02
+        );
+    }
+
+    animate();
+});
